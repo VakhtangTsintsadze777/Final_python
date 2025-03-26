@@ -1,8 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}About{% endblock %}
+{% block title %}About Us{% endblock %}
 {% block content %}
-    <h1>About</h1>
-    <p>This is the about page</p>
-    <p>pottery shop</p>
+    <div class="hero-section">
+        <h1>About Our Pottery Shop</h1>
+        <p class="tagline">Crafting beautiful pieces since 2010</p>
+    </div>
+
+    <div class="about-content">
+        <div class="about-section">
+            <h2>Our Story</h2>
+            <p>Founded in 2010, our pottery shop has been dedicated to creating unique, handcrafted ceramic pieces that bring warmth and character to homes around the world. Each piece is carefully crafted by our skilled artisans who have years of experience in traditional pottery techniques.</p>
+        </div>
+
+        <div class="about-section">
+            <h2>Our Craft</h2>
+            <p>We specialize in creating functional and decorative pottery pieces using high-quality clay and traditional firing methods. Our collection includes everything from elegant vases and decorative bowls to practical dinnerware and coffee mugs. Each piece is unique, bearing the subtle marks of handcrafting that make it truly special.</p>
+        </div>
+
+        <div class="about-section">
+            <h2>Our Commitment</h2>
+            <p>We are committed to sustainability and ethical practices. Our materials are carefully sourced, and we use eco-friendly processes in our studio. We believe in creating pieces that not only look beautiful but also stand the test of time.</p>
+        </div>
+
+        <div class="about-section">
+            <h2>Visit Our Studio</h2>
+            <p>We welcome visitors to our studio where you can see our artisans at work and learn about the pottery-making process. Watch as raw clay is transformed into beautiful pieces right before your eyes.</p>
+        </div>
+    </div>
+
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background-color: #f5f5f5;
+            margin-bottom: 3rem;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .about-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .about-section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .about-section:hover {
+            transform: scale(1.02);
+        }
+
+        .about-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .about-section p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+    </style>
 {% endblock %}

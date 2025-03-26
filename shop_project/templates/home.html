@@ -2,15 +2,389 @@
 
 {% block title %}Home{% endblock %}
 {% block content %}
-    <h1>Home</h1>
-    <p>This is the home page</p>
-    <p>pottery shop</p>
+    <div class="hero-section">
+        <h1>Welcome to Our Pottery Shop</h1>
+        <p class="tagline">Handcrafted with love, designed for your home</p>
+    </div>
 
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
-    {% for product in products %}
-        <h2>{{ product.title }}</h2>
-        <p>{{ product.description }}</p>
-        <p>{{ product.price }}</p>
-    {% endfor %}
+    <div id="products-container" class="fade-transition">
+        <div class="products-grid {% if products|length == 1 %}single-product{% endif %}">
+            {% for product in products %}
+                <div class="product-card">
+                    {% if product.image %}
+                        <div class="product-image">
+                            <img src="{{ product.image.url }}" alt="{{ product.title }}">
+                        </div>
+                    {% else %}
+                        <div class="product-image placeholder">
+                            <span>No image available</span>
+                        </div>
+                    {% endif %}
+                    <h2>{{ product.title }}</h2>
+                    <p class="description">
+                        {{ product.description }}
+                    </p>
+                    <p class="price">
+                        {% if product.price|floatformat:2|slice:"-2:" != ".00" %}
+                            ${{ product.price }}
+                        {% else %}
+                            ${{ product.price|floatformat:0 }}
+                        {% endif %}
+                    </p>
+                    <p class="stock-info">
+                        {% if product.stock > 0 %}
+                            <span class="in-stock">In Stock: {{ product.stock }}</span>
+                        {% else %}
+                            <span class="out-of-stock">Out of Stock</span>
+                        {% endif %}
+                    </p>
+                    <form method="post" action="{% url 'add-to-cart' product.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="customer_name" value="Guest">
+                        <input type="hidden" name="customer_email" value="guest@example.com">
+                        <button type="submit" class="add-to-cart {% if product.stock == 0 %}disabled{% endif %}" {% if product.stock == 0 %}disabled{% endif %}>
+                            {% if product.stock == 0 %}
+                                Out of Stock
+                            {% else %}
+                                Add to Cart
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link page-transition" href="?page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link page-transition" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link page-transition" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link page-transition" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link page-transition" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+    <div class="cart-link">
+        <a href="{% url 'view_cart' %}" class="view-cart-button">View Cart</a>
+    </div>
+
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background-color: #f5f5f5;
+            margin-bottom: 3rem;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .messages {
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            padding: 1rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .products-grid.single-product {
+            grid-template-columns: minmax(300px, 400px);
+            justify-content: center;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: scale(1.05);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-image.placeholder {
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .product-card h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .description {
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .price {
+            font-size: 1.25rem;
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .add-to-cart {
+            background-color: #4a4a4a;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            width: 100%;
+        }
+
+        .add-to-cart:hover:not(.disabled) {
+            transform: scale(1.05);
+        }
+
+        .add-to-cart.disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .out-of-stock {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        .cart-link {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+        }
+
+        .view-cart-button {
+            background-color: #4a4a4a;
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s, background-color 0.3s;
+        }
+
+        .view-cart-button:hover {
+            transform: scale(1.05);
+            background-color: #333;
+        }
+
+        .stock-info {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .in-stock {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        .pagination {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 0.5rem;
+        }
+
+        .page-item {
+            display: inline-block;
+        }
+
+        .page-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            color: #4a4a4a;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            padding: 0 0.75rem;
+        }
+
+        .page-link:hover {
+            background-color: #f8f9fa;
+            color: #4a4a4a;
+            border-color: #dee2e6;
+        }
+
+        .page-item.active .page-link {
+            background-color: #4a4a4a;
+            border-color: #4a4a4a;
+            color: white;
+        }
+
+        .page-item.disabled .page-link {
+            color: #6c757d;
+            pointer-events: none;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+        .fade-transition {
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .fade-transition.fade-out {
+            opacity: 0;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const productsContainer = document.getElementById('products-container');
+            const pageLinks = document.querySelectorAll('.page-transition');
+
+            // Restore scroll position if it exists
+            const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+            if (savedScrollPosition) {
+                window.scrollTo(0, parseInt(savedScrollPosition));
+                sessionStorage.removeItem('scrollPosition');
+            }
+
+            pageLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const href = this.getAttribute('href');
+
+                    // Save current scroll position
+                    sessionStorage.setItem('scrollPosition', window.scrollY.toString());
+
+                    // Fade out
+                    productsContainer.classList.add('fade-out');
+
+                    // Wait for fade out, then navigate
+                    setTimeout(() => {
+                        window.location.href = href;
+                    }, 300);
+                });
+            });
+
+            // Fade in on page load
+            productsContainer.style.opacity = '0';
+            setTimeout(() => {
+                productsContainer.style.opacity = '1';
+            }, 100);
+        });
+    </script>
 {% endblock %}
