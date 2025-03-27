@@ -23,8 +23,8 @@
                     {% endif %}
                     <form method="post" action="{% url 'add-to-cart' product.id %}" class="mt-3">
                         {% csrf_token %}
-                        <input type="hidden" name="customer_name" value="Guest">
-                        <input type="hidden" name="customer_email" value="guest@example.com">
+                        <input type="hidden" name="customer_name" value="{{ customer_name }}">
+                        <input type="hidden" name="customer_email" value="{{ customer_email }}">
                         <button type="submit" class="btn btn-primary {% if product.stock == 0 %}disabled{% endif %}" 
                                 {% if product.stock == 0 %}disabled{% endif %}>
                             {% if product.stock == 0 %}

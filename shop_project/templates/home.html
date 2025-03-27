@@ -7,6 +7,43 @@
         <p class="tagline">Handcrafted with love, designed for your home</p>
     </div>
 
+    <div class="filters-section">
+        <form method="get" class="filters-form">
+            <div class="filter-group">
+                <label for="sort">Sort by:</label>
+                <select name="sort" id="sort" onchange="this.form.submit()">
+                    <option value="">Default</option>
+                    <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="category_asc" {% if sort_by == 'category_asc' %}selected{% endif %}>Category: A to Z</option>
+                    <option value="category_desc" {% if sort_by == 'category_desc' %}selected{% endif %}>Category: Z to A</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="min_price">Min Price:</label>
+                <input type="number" name="min_price" id="min_price" min="0" step="0.1" value="{{ request.GET.min_price }}" placeholder="Min">
+            </div>
+            <div class="filter-group">
+                <label for="max_price">Max Price:</label>
+                <input type="number" name="max_price" id="max_price" min="0" step="0.1" value="{{ request.GET.max_price }}" placeholder="Max">
+            </div>
+            <div class="filter-group">
+                <label for="category">Category:</label>
+                <select name="category" id="category" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    <option value="Bowls" {% if request.GET.category == 'Bowls' %}selected{% endif %}>Bowls</option>
+                    <option value="Jugs" {% if request.GET.category == 'Jugs' %}selected{% endif %}>Jugs</option>
+                    <option value="Teapots" {% if request.GET.category == 'Teapots' %}selected{% endif %}>Teapots</option>
+                    <option value="Vases" {% if request.GET.category == 'Vases' %}selected{% endif %}>Vases</option>
+                </select>
+            </div>
+            <div class="filter-buttons">
+                <button type="submit" class="apply-filters">Apply Filters</button>
+                <a href="{% url 'home' %}" class="reset-filters">Reset Filters</a>
+            </div>
+        </form>
+    </div>
+
     {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -72,12 +109,12 @@
             <ul class="pagination">
                 {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link page-transition" href="?page=1" aria-label="First">
+                        <a class="page-link page-transition" href="?page=1{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}" aria-label="First">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link page-transition" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <a class="page-link page-transition" href="?page={{ page_obj.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}" aria-label="Previous">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -90,19 +127,19 @@
                         </li>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                         <li class="page-item">
-                            <a class="page-link page-transition" href="?page={{ num }}">{{ num }}</a>
+                            <a class="page-link page-transition" href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">{{ num }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link page-transition" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <a class="page-link page-transition" href="?page={{ page_obj.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link page-transition" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <a class="page-link page-transition" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}" aria-label="Last">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
@@ -111,10 +148,6 @@
         </nav>
     </div>
     {% endif %}
-
-    <div class="cart-link">
-        <a href="{% url 'view_cart' %}" class="view-cart-button">View Cart</a>
-    </div>
 
     <style>
         .hero-section {
@@ -176,6 +209,8 @@
             max-width: 100%;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            position: relative;
         }
 
         .product-card:hover {
@@ -188,6 +223,7 @@
             margin-bottom: 1rem;
             border-radius: 4px;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .product-image img {
@@ -214,12 +250,14 @@
             color: #333;
             margin-bottom: 1rem;
             font-size: 1.5rem;
+            flex-shrink: 0;
         }
 
         .description {
             color: #666;
             margin-bottom: 1rem;
             line-height: 1.5;
+            flex-grow: 1;
         }
 
         .price {
@@ -227,6 +265,13 @@
             color: #2c3e50;
             font-weight: bold;
             margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .stock-info {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            flex-shrink: 0;
         }
 
         .add-to-cart {
@@ -238,6 +283,8 @@
             cursor: pointer;
             transition: transform 0.3s;
             width: 100%;
+            margin-top: auto;
+            flex-shrink: 0;
         }
 
         .add-to-cart:hover:not(.disabled) {
@@ -253,32 +300,6 @@
         .out-of-stock {
             color: #dc3545;
             font-weight: 500;
-        }
-
-        .cart-link {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-        }
-
-        .view-cart-button {
-            background-color: #4a4a4a;
-            color: white;
-            text-decoration: none;
-            padding: 1rem 2rem;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: transform 0.3s, background-color 0.3s;
-        }
-
-        .view-cart-button:hover {
-            transform: scale(1.05);
-            background-color: #333;
-        }
-
-        .stock-info {
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
         }
 
         .in-stock {
@@ -347,6 +368,128 @@
 
         .fade-transition.fade-out {
             opacity: 0;
+        }
+
+        .filters-section {
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .filters-form {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            color: #333;
+            font-size: 0.9rem;
+            min-width: 150px;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4a4a4a;
+            box-shadow: 0 0 0 2px rgba(74, 74, 74, 0.1);
+        }
+
+        .apply-filters {
+            padding: 0.5rem 1rem;
+            background-color: #4a4a4a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .apply-filters:hover {
+            background-color: #333;
+        }
+
+        .filter-group input[type="number"] {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            color: #333;
+            font-size: 0.9rem;
+            width: 100px;
+        }
+
+        .filter-group input[type="number"]::-webkit-inner-spin-button,
+        .filter-group input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .reset-filters {
+            padding: 0.5rem 1rem;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .reset-filters:hover {
+            background-color: #5a6268;
+        }
+
+        .category-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .category-button {
+            padding: 0.5rem 1rem;
+            background-color: #f8f9fa;
+            color: #4a4a4a;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .category-button:hover {
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+        }
+
+        .category-button.active {
+            background-color: #4a4a4a;
+            color: white;
+            border-color: #4a4a4a;
         }
     </style>
 

@@ -6,4 +6,4 @@ class ShopConfig(AppConfig):
     name = 'shop'
 
     def ready(self):
-        import shop.signals  # Register signals when the app is ready
+        import shop.signals

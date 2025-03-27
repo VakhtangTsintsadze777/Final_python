@@ -26,7 +26,9 @@ class ProductListView(ListView):
         category = self.request.GET.get('category')
         min_price = self.request.GET.get('min_price')
         max_price = self.request.GET.get('max_price')
+        sort_by = self.request.GET.get('sort', '')  # Get sort parameter
 
+        # Apply filters
         if search_query:
             queryset = queryset.filter(
                 Q(title__icontains=search_query) |
@@ -39,12 +41,38 @@ class ProductListView(ListView):
         if max_price:
             queryset = queryset.filter(price__lte=max_price)
 
+        # Apply sorting
+        if sort_by == 'price_asc':
+            queryset = queryset.order_by('price')
+        elif sort_by == 'price_desc':
+            queryset = queryset.order_by('-price')
+        elif sort_by == 'category_asc':
+            queryset = queryset.order_by('category__name')
+        elif sort_by == 'category_desc':
+            queryset = queryset.order_by('-category__name')
+
         return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sort_by'] = self.request.GET.get('sort', '')
+        context['categories'] = Product.objects.values_list('category__name', flat=True).distinct()
+        return context
 
 class ProductDetailView(DetailView):
     model = Product
     template_name = 'product_detail.html'
     context_object_name = 'product'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['customer_name'] = self.request.user.username
+            context['customer_email'] = self.request.user.email
+        else:
+            context['customer_name'] = 'Guest'
+            context['customer_email'] = 'guest@example.com'
+        return context
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
@@ -63,6 +91,15 @@ class ProductDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'product_confirm_delete.html'
     success_url = reverse_lazy('home')
 
+class OrderListView(LoginRequiredMixin, ListView):
+    model = Order
+    template_name = 'orders.html'
+    context_object_name = 'orders'
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return Order.objects.filter(customer_email=self.request.user.email)
+
 # Function-based views
 def about_view(request):
     return render(request, "about.html")
@@ -75,10 +112,18 @@ def add_to_cart(request, product_id):
             messages.error(request, f'Sorry, {product.title} is out of stock!')
             return redirect('home')
         
+        # Get customer email based on authentication status
+        if request.user.is_authenticated:
+            customer_email = request.user.email
+            customer_name = request.user.username
+        else:
+            customer_email = 'guest@example.com'
+            customer_name = 'Guest'
+        
         # Get or create the order
         order, created = Order.objects.get_or_create(
-            customer_name=request.POST.get('customer_name', 'Guest'),
-            customer_email=request.POST.get('customer_email', 'guest@example.com'),
+            customer_name=customer_name,
+            customer_email=customer_email,
             status='pending',
             defaults={'total_amount': Decimal('0.00')}
         )
@@ -239,4 +284,13 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('home')
+
+def orders_view(request):
+    if request.user.is_authenticated:
+        orders = Order.objects.filter(customer_email=request.user.email)
+    else:
+        orders = Order.objects.filter(customer_email='guest@example.com')
+    
+    orders = orders.order_by('-created_at')
+    return render(request, 'orders.html', {'orders': orders})
  
