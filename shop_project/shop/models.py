@@ -7,6 +7,9 @@ class ProductManager(models.Manager):
     def in_stock(self):
         return self.filter(stock__gt=0)
     
+    def active(self):
+        return self.filter(is_active=True)
+    
     def by_category(self, category_name):
         return self.filter(category__name=category_name)
     

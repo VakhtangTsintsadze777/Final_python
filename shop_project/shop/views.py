@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from shop.models import Product, Order, OrderItem
 from django.contrib import messages
 from decimal import Decimal
@@ -8,8 +8,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
+from django.core.exceptions import ValidationError
+from django.http import JsonResponse
+import logging
+
+from .forms import ProductForm, OrderForm, OrderItemForm, ProductSearchForm
+
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -18,46 +25,55 @@ class ProductListView(ListView):
     model = Product
     template_name = 'home.html'
     context_object_name = 'products'
-    paginate_by = 3  # Changed from 8 to 3 products per page
+    paginate_by = 3
 
     def get_queryset(self):
-        queryset = Product.objects.all()
-        search_query = self.request.GET.get('search')
-        category = self.request.GET.get('category')
-        min_price = self.request.GET.get('min_price')
-        max_price = self.request.GET.get('max_price')
-        sort_by = self.request.GET.get('sort', '')  # Get sort parameter
+        try:
+            queryset = Product.objects.active()
+            form = ProductSearchForm(self.request.GET)
+            
+            if form.is_valid():
+                search_query = form.cleaned_data.get('search')
+                category = form.cleaned_data.get('category')
+                min_price = form.cleaned_data.get('min_price')
+                max_price = form.cleaned_data.get('max_price')
+                sort_by = form.cleaned_data.get('sort', '')
 
-        # Apply filters
-        if search_query:
-            queryset = queryset.filter(
-                Q(title__icontains=search_query) |
-                Q(description__icontains=search_query)
-            )
-        if category:
-            queryset = queryset.filter(category__name=category)
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
+                if search_query:
+                    queryset = queryset.search(search_query)
+                if category:
+                    queryset = queryset.by_category(category)
+                if min_price:
+                    queryset = queryset.filter(price__gte=min_price)
+                if max_price:
+                    queryset = queryset.filter(price__lte=max_price)
 
-        # Apply sorting
-        if sort_by == 'price_asc':
-            queryset = queryset.order_by('price')
-        elif sort_by == 'price_desc':
-            queryset = queryset.order_by('-price')
-        elif sort_by == 'category_asc':
-            queryset = queryset.order_by('category__name')
-        elif sort_by == 'category_desc':
-            queryset = queryset.order_by('-category__name')
+                if sort_by == 'price_asc':
+                    queryset = queryset.order_by('price')
+                elif sort_by == 'price_desc':
+                    queryset = queryset.order_by('-price')
+                elif sort_by == 'category_asc':
+                    queryset = queryset.order_by('category__name')
+                elif sort_by == 'category_desc':
+                    queryset = queryset.order_by('-category__name')
 
-        return queryset
+            return queryset
+        except Exception as e:
+            logger.error(f"Error in ProductListView.get_queryset: {str(e)}")
+            messages.error(self.request, "An error occurred while loading products.")
+            return Product.objects.none()
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['sort_by'] = self.request.GET.get('sort', '')
-        context['categories'] = Product.objects.values_list('category__name', flat=True).distinct()
-        return context
+        try:
+            context = super().get_context_data(**kwargs)
+            context['form'] = ProductSearchForm(self.request.GET)
+            context['sort_by'] = self.request.GET.get('sort', '')
+            context['categories'] = Product.objects.values_list('category__name', flat=True).distinct()
+            return context
+        except Exception as e:
+            logger.error(f"Error in ProductListView.get_context_data: {str(e)}")
+            messages.error(self.request, "An error occurred while loading the page.")
+            return {}
 
 class ProductDetailView(DetailView):
     model = Product
@@ -65,31 +81,66 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.request.user.is_authenticated:
-            context['customer_name'] = self.request.user.username
-            context['customer_email'] = self.request.user.email
-        else:
-            context['customer_name'] = 'Guest'
-            context['customer_email'] = 'guest@example.com'
-        return context
+        try:
+            context = super().get_context_data(**kwargs)
+            if self.request.user.is_authenticated:
+                context['customer_name'] = self.request.user.username
+                context['customer_email'] = self.request.user.email
+            else:
+                context['customer_name'] = 'Guest'
+                context['customer_email'] = 'guest@example.com'
+            return context
+        except Exception as e:
+            logger.error(f"Error in ProductDetailView.get_context_data: {str(e)}")
+            messages.error(self.request, "An error occurred while loading the product details.")
+            return {}
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
+    form_class = ProductForm
     template_name = 'product_form.html'
-    fields = ['title', 'description', 'price', 'category', 'stock', 'is_active']
     success_url = reverse_lazy('home')
+
+    def form_valid(self, form):
+        try:
+            response = super().form_valid(form)
+            messages.success(self.request, 'Product created successfully!')
+            return response
+        except Exception as e:
+            logger.error(f"Error in ProductCreateView.form_valid: {str(e)}")
+            messages.error(self.request, 'An error occurred while creating the product.')
+            return self.form_invalid(form)
 
 class ProductUpdateView(LoginRequiredMixin, UpdateView):
     model = Product
+    form_class = ProductForm
     template_name = 'product_form.html'
-    fields = ['title', 'description', 'price', 'category', 'stock', 'is_active']
     success_url = reverse_lazy('home')
+
+    def form_valid(self, form):
+        try:
+            response = super().form_valid(form)
+            messages.success(self.request, 'Product updated successfully!')
+            return response
+        except Exception as e:
+            logger.error(f"Error in ProductUpdateView.form_valid: {str(e)}")
+            messages.error(self.request, 'An error occurred while updating the product.')
+            return self.form_invalid(form)
 
 class ProductDeleteView(LoginRequiredMixin, DeleteView):
     model = Product
     template_name = 'product_confirm_delete.html'
     success_url = reverse_lazy('home')
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            response = super().delete(request, *args, **kwargs)
+            messages.success(self.request, 'Product deleted successfully!')
+            return response
+        except Exception as e:
+            logger.error(f"Error in ProductDeleteView.delete: {str(e)}")
+            messages.error(self.request, 'An error occurred while deleting the product.')
+            return redirect(self.success_url)
 
 class OrderListView(LoginRequiredMixin, ListView):
     model = Order
@@ -98,7 +149,12 @@ class OrderListView(LoginRequiredMixin, ListView):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return Order.objects.filter(customer_email=self.request.user.email)
+        try:
+            return Order.objects.get_customer_orders(self.request.user.email)
+        except Exception as e:
+            logger.error(f"Error in OrderListView.get_queryset: {str(e)}")
+            messages.error(self.request, "An error occurred while loading your orders.")
+            return Order.objects.none()
 
 # Function-based views
 def about_view(request):
@@ -106,61 +162,69 @@ def about_view(request):
 
 def add_to_cart(request, product_id):
     if request.method == 'POST':
-        product = get_object_or_404(Product, id=product_id)
-        
-        if not product.is_in_stock():
-            messages.error(request, f'Sorry, {product.title} is out of stock!')
+        try:
+            product = get_object_or_404(Product, id=product_id)
+            
+            if not product.is_in_stock():
+                messages.error(request, f'Sorry, {product.title} is out of stock!')
+                return redirect('home')
+            
+            if request.user.is_authenticated:
+                customer_email = request.user.email
+                customer_name = request.user.username
+            else:
+                customer_email = 'guest@example.com'
+                customer_name = 'Guest'
+            
+            order, created = Order.objects.get_or_create(
+                customer_name=customer_name,
+                customer_email=customer_email,
+                status='pending',
+                defaults={'total_amount': Decimal('0.00')}
+            )
+            
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=1,
+                price=product.price
+            )
+            
+            messages.success(request, f'{product.title} added to cart!')
             return redirect('home')
-        
-        # Get customer email based on authentication status
-        if request.user.is_authenticated:
-            customer_email = request.user.email
-            customer_name = request.user.username
-        else:
-            customer_email = 'guest@example.com'
-            customer_name = 'Guest'
-        
-        # Get or create the order
-        order, created = Order.objects.get_or_create(
-            customer_name=customer_name,
-            customer_email=customer_email,
-            status='pending',
-            defaults={'total_amount': Decimal('0.00')}
-        )
-        
-        # Create order item
-        OrderItem.objects.create(
-            order=order,
-            product=product,
-            quantity=1,
-            price=product.price
-        )
-        
-        messages.success(request, f'{product.title} added to cart!')
-        return redirect('home')
+        except Exception as e:
+            logger.error(f"Error in add_to_cart: {str(e)}")
+            messages.error(request, "An error occurred while adding the item to cart.")
+            return redirect('home')
     
     return redirect('home')
 
 def view_cart(request):
-    # Get the current pending order for the user
-    order = Order.objects.filter(status='pending').first()
-    
-    if order:
-        # Get all items in the cart
-        items = OrderItem.objects.filter(order=order)
+    try:
+        order = Order.objects.get_pending_order()
         
-        # Calculate totals
-        subtotal = sum(item.total for item in items)
-        shipping_cost = len(items)  # $1 per item
-        total = subtotal + shipping_cost
-        
-        return render(request, 'cart.html', {
-            'items': items,
-            'subtotal': subtotal,
-            'shipping_cost': shipping_cost,
-            'total': total,
-        })
-    else:
+        if order:
+            items = OrderItem.objects.filter(order=order)
+            subtotal = sum(item.total for item in items)
+            shipping_cost = len(items)
+            total = subtotal + shipping_cost
+            
+            return render(request, 'cart.html', {
+                'items': items,
+                'subtotal': subtotal,
+                'shipping_cost': shipping_cost,
+                'total': total,
+            })
+        else:
+            return render(request, 'cart.html', {
+                'items': None,
+                'subtotal': 0,
+                'shipping_cost': 0,
+                'total': 0,
+            })
+    except Exception as e:
+        logger.error(f"Error in view_cart: {str(e)}")
+        messages.error(request, "An error occurred while loading your cart.")
         return render(request, 'cart.html', {
             'items': None,
             'subtotal': 0,
@@ -170,62 +234,45 @@ def view_cart(request):
 
 def remove_from_cart(request, item_id):
     if request.method == 'POST':
-        item = get_object_or_404(OrderItem, id=item_id)
-        order = item.order
-        product = item.product
-        product_title = product.title
-        
-        # Delete the item
-        item.delete()
-        
-        # Update order total
-        if order.orderitem_set.exists():
-            order.update_total()
-        else:
-            # If no items left, delete the order
-            order.delete()
-        
-        messages.success(request, f'{product_title} removed from cart!')
-        return redirect('view_cart')
+        try:
+            item = get_object_or_404(OrderItem, id=item_id)
+            order = item.order
+            product = item.product
+            product_title = product.title
+            
+            item.delete()
+            
+            if order.orderitem_set.exists():
+                order.update_total()
+            else:
+                order.delete()
+            
+            messages.success(request, f'{product_title} removed from cart!')
+            return redirect('view_cart')
+        except Exception as e:
+            logger.error(f"Error in remove_from_cart: {str(e)}")
+            messages.error(request, "An error occurred while removing the item from cart.")
+            return redirect('view_cart')
     
     return redirect('view_cart')
 
 def checkout(request):
     if request.method == 'POST':
-        order = Order.objects.filter(status='pending').first()
-        
-        if not order:
-            messages.error(request, 'No items in cart')
-            return redirect('view_cart')
-            
-        items = OrderItem.objects.filter(order=order)
-        
-        # Check stock availability
-        for item in items:
-            if item.quantity > item.product.stock:
-                messages.error(request, f'Not enough stock for {item.product.title}')
-                return redirect('view_cart')
-        
-        # Calculate totals
-        subtotal = sum(item.total for item in items)
-        shipping_cost = len(items)  # $1 per item
-        total = subtotal + shipping_cost
-        
-        # Update stock and order
         try:
-            for item in items:
-                item.product.stock -= item.quantity
-                item.product.save()
+            order = Order.objects.get_pending_order()
             
-            order.total_amount = total
+            if not order:
+                messages.error(request, 'No items in cart')
+                return redirect('view_cart')
+                
             order.status = 'processing'
             order.save()
             
             messages.success(request, 'Order placed successfully!')
             return redirect('home')
-            
         except Exception as e:
-            messages.error(request, 'Error processing order')
+            logger.error(f"Error in checkout: {str(e)}")
+            messages.error(request, "An error occurred while processing your order.")
             return redirect('view_cart')
     
     return redirect('view_cart')
