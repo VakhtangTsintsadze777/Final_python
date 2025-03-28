@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, Http404
-from shop.models import Product, Order, OrderItem
+from shop.models import Product, Order, OrderItem, Category
 from django.contrib import messages
 from decimal import Decimal
 from django.contrib.auth.models import User
@@ -42,10 +42,10 @@ class ProductListView(ListView):
                 if search_query:
                     queryset = queryset.search(search_query)
                 if category:
-                    queryset = queryset.by_category(category)
-                if min_price:
+                    queryset = queryset.filter(category=category)
+                if min_price is not None:
                     queryset = queryset.filter(price__gte=min_price)
-                if max_price:
+                if max_price is not None:
                     queryset = queryset.filter(price__lte=max_price)
 
                 if sort_by == 'price_asc':
@@ -68,7 +68,7 @@ class ProductListView(ListView):
             context = super().get_context_data(**kwargs)
             context['form'] = ProductSearchForm(self.request.GET)
             context['sort_by'] = self.request.GET.get('sort', '')
-            context['categories'] = Product.objects.values_list('category__name', flat=True).distinct()
+            context['categories'] = Category.objects.filter(is_active=True)
             return context
         except Exception as e:
             logger.error(f"Error in ProductListView.get_context_data: {str(e)}")
@@ -264,6 +264,16 @@ def checkout(request):
             if not order:
                 messages.error(request, 'No items in cart')
                 return redirect('view_cart')
+            
+            # Check if all items are in stock before proceeding
+            for item in order.orderitem_set.all():
+                if item.product.stock < item.quantity:
+                    messages.error(request, f'Sorry, {item.product.title} is out of stock!')
+                    return redirect('view_cart')
+            
+            # Reduce stock for each item
+            for item in order.orderitem_set.all():
+                item.product.reduce_stock(item.quantity)
                 
             order.status = 'processing'
             order.save()

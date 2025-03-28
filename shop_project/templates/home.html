@@ -31,10 +31,9 @@
                 <label for="category">Category:</label>
                 <select name="category" id="category" onchange="this.form.submit()">
                     <option value="">All Categories</option>
-                    <option value="Bowls" {% if request.GET.category == 'Bowls' %}selected{% endif %}>Bowls</option>
-                    <option value="Jugs" {% if request.GET.category == 'Jugs' %}selected{% endif %}>Jugs</option>
-                    <option value="Teapots" {% if request.GET.category == 'Teapots' %}selected{% endif %}>Teapots</option>
-                    <option value="Vases" {% if request.GET.category == 'Vases' %}selected{% endif %}>Vases</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="filter-buttons">
