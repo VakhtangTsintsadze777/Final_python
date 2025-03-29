@@ -62,14 +62,21 @@ class ProductSearchForm(forms.Form):
             'step': '0.1'
         })
     )
-    sort_by = forms.ChoiceField(
+    sort = forms.ChoiceField(
         choices=[
             ('', 'Default'),
             ('price_asc', 'Price: Low to High'),
             ('price_desc', 'Price: High to Low'),
+            ('name_asc', 'Name: A to Z'),
+            ('name_desc', 'Name: Z to A'),
             ('category_asc', 'Category: A to Z'),
             ('category_desc', 'Category: Z to A'),
+            ('newest', 'Newest First'),
+            ('oldest', 'Oldest First'),
         ],
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'onchange': 'this.form.submit()'
+        })
     ) 

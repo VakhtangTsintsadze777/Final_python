@@ -7,18 +7,49 @@
     <title>{% block title %}Pottery Shop{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --hover-bg: #f8f9fa;
+            --nav-bg: #ffffff;
+            --nav-border: #dee2e6;
+            --navbar-text: #ffffff;
+            --navbar-bg: #4a4a4a;
+            --transition-duration: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --hover-bg: #3d3d3d;
+            --nav-bg: #2d2d2d;
+            --nav-border: #404040;
+            --navbar-text: #ffffff;
+            --navbar-bg: #1a1a1a;
+        }
+
         body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color var(--transition-duration) ease,
+                        color var(--transition-duration) ease;
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f8f9fa;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
         .navbar {
-            background-color: #4a4a4a;
+            background-color: var(--navbar-bg);
+            border-bottom: 1px solid var(--nav-border);
             padding: 1rem;
             display: flex;
             justify-content: space-between;
@@ -28,13 +59,16 @@
             z-index: 1000;
             width: 100%;
             box-sizing: border-box;
+            transition: background-color var(--transition-duration) ease,
+                        border-color var(--transition-duration) ease;
         }
 
         .navbar-brand {
-            color: white;
+            color: var(--navbar-text);
             text-decoration: none;
             font-size: 1.5rem;
             font-weight: bold;
+            transition: color var(--transition-duration) ease;
         }
 
         .nav-links {
@@ -46,18 +80,19 @@
         }
 
         .nav-links a {
-            color: white;
+            color: var(--navbar-text);
             text-decoration: none;
             padding: 0.5rem 1rem;
             border-radius: 4px;
-            transition: background-color 0.3s;
+            transition: all var(--transition-duration) ease;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
         }
 
         .nav-links a:hover {
-            background-color: #333;
+            background-color: var(--hover-bg);
+            color: var(--navbar-text);
         }
 
         .cart-link {
@@ -76,6 +111,7 @@
             min-width: 20px;
             text-align: center;
             display: inline-block;
+            transition: all var(--transition-duration) ease;
         }
 
         .signup-button {
@@ -84,7 +120,7 @@
             text-decoration: none;
             padding: 0.5rem 1rem;
             border-radius: 4px;
-            transition: background-color 0.3s;
+            transition: all var(--transition-duration) ease;
         }
 
         .signup-button:hover {
@@ -98,15 +134,17 @@
         }
 
         .user-icon {
-            color: white;
+            color: var(--navbar-text);
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            transition: color var(--transition-duration) ease;
         }
 
         .user-icon i {
             font-size: 1.2rem;
+            transition: color var(--transition-duration) ease;
         }
 
         .logout-button {
@@ -115,7 +153,7 @@
             text-decoration: none;
             padding: 0.5rem 1rem;
             border-radius: 4px;
-            transition: background-color 0.3s;
+            transition: all var(--transition-duration) ease;
         }
 
         .logout-button:hover {
@@ -127,6 +165,100 @@
             flex: 1;
             width: 100%;
             box-sizing: border-box;
+            transition: background-color var(--transition-duration) ease;
+        }
+
+        .dark-mode-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            font-size: 1.2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-duration) ease;
+            color: var(--navbar-text);
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: var(--hover-bg);
+            transform: scale(1.1);
+        }
+
+        .dark-icon {
+            display: none;
+            transition: opacity var(--transition-duration) ease;
+        }
+
+        [data-theme="dark"] .light-icon {
+            display: none;
+            opacity: 0;
+        }
+
+        [data-theme="dark"] .dark-icon {
+            display: inline;
+            opacity: 1;
+        }
+
+        /* Update existing styles to use CSS variables */
+        .product-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: all var(--transition-duration) ease;
+        }
+
+        .filters-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: all var(--transition-duration) ease;
+        }
+
+        .filter-group select,
+        .filter-group input[type="number"] {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-duration) ease;
+        }
+
+        .filter-group select:focus,
+        .filter-group input[type="number"]:focus {
+            border-color: #4a4a4a;
+            box-shadow: 0 0 0 2px rgba(74, 74, 74, 0.1);
+        }
+
+        .filter-group label {
+            color: var(--text-color);
+            transition: color var(--transition-duration) ease;
+        }
+
+        .pagination .page-link {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+            transition: all var(--transition-duration) ease;
+        }
+
+        .pagination .page-link:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #4a4a4a;
+            border-color: #4a4a4a;
+            color: white;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
         }
     </style>
 </head>
@@ -151,11 +283,12 @@
                 </a>
             {% else %}
                 <a href="{% url 'login' %}" class="signup-button">Login</a>
-                <span class="user-icon">
-                    <i class="fas fa-user"></i>
-                    Guest
-                </span>
+                <a href="{% url 'register' %}">Register</a>
             {% endif %}
+            <button id="darkModeToggle" class="dark-mode-toggle">
+                <span class="light-icon">☀️</span>
+                <span class="dark-icon">🌙</span>
+            </button>
         </div>
     </nav>
 
@@ -163,5 +296,56 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get CSRF token from cookie
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            // Check for saved theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+
+            // Handle theme toggle
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', function() {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+
+                    // Send theme preference to server
+                    const csrftoken = getCookie('csrftoken');
+                    fetch('/update-theme/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({
+                            theme: newTheme
+                        })
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

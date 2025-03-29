@@ -13,6 +13,8 @@ from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 import logging
+from django.views.decorators.http import require_POST
+import json
 
 from .forms import ProductForm, OrderForm, OrderItemForm, ProductSearchForm
 
@@ -37,7 +39,7 @@ class ProductListView(ListView):
                 category = form.cleaned_data.get('category')
                 min_price = form.cleaned_data.get('min_price')
                 max_price = form.cleaned_data.get('max_price')
-                sort_by = form.cleaned_data.get('sort', '')
+                sort = form.cleaned_data.get('sort', '')
 
                 if search_query:
                     queryset = queryset.search(search_query)
@@ -48,14 +50,27 @@ class ProductListView(ListView):
                 if max_price is not None:
                     queryset = queryset.filter(price__lte=max_price)
 
-                if sort_by == 'price_asc':
-                    queryset = queryset.order_by('price')
-                elif sort_by == 'price_desc':
-                    queryset = queryset.order_by('-price')
-                elif sort_by == 'category_asc':
-                    queryset = queryset.order_by('category__name')
-                elif sort_by == 'category_desc':
-                    queryset = queryset.order_by('-category__name')
+                # Handle sorting
+                if sort:
+                    if sort == 'price_asc':
+                        queryset = queryset.order_by('price')
+                    elif sort == 'price_desc':
+                        queryset = queryset.order_by('-price')
+                    elif sort == 'name_asc':
+                        queryset = queryset.order_by('title')
+                    elif sort == 'name_desc':
+                        queryset = queryset.order_by('-title')
+                    elif sort == 'category_asc':
+                        queryset = queryset.order_by('category__name')
+                    elif sort == 'category_desc':
+                        queryset = queryset.order_by('-category__name')
+                    elif sort == 'newest':
+                        queryset = queryset.order_by('-created_at')
+                    elif sort == 'oldest':
+                        queryset = queryset.order_by('created_at')
+                else:
+                    # Default sorting by oldest first
+                    queryset = queryset.order_by('created_at')
 
             return queryset
         except Exception as e:
@@ -67,7 +82,7 @@ class ProductListView(ListView):
         try:
             context = super().get_context_data(**kwargs)
             context['form'] = ProductSearchForm(self.request.GET)
-            context['sort_by'] = self.request.GET.get('sort', '')
+            context['sort'] = self.request.GET.get('sort', '')
             context['categories'] = Category.objects.filter(is_active=True)
             return context
         except Exception as e:
@@ -350,4 +365,18 @@ def orders_view(request):
     
     orders = orders.order_by('-created_at')
     return render(request, 'orders.html', {'orders': orders})
+
+@require_POST
+def update_theme(request):
+    try:
+        data = json.loads(request.body)
+        theme = data.get('theme')
+        if theme in ['light', 'dark']:
+            request.session['theme'] = theme
+            return JsonResponse({'status': 'success'})
+        return JsonResponse({'status': 'error', 'message': 'Invalid theme'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
  

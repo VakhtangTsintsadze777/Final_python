@@ -11,12 +11,16 @@
         <form method="get" class="filters-form">
             <div class="filter-group">
                 <label for="sort">Sort by:</label>
-                <select name="sort" id="sort" onchange="this.form.submit()">
+                <select name="sort" id="sort" class="form-control">
                     <option value="">Default</option>
-                    <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
-                    <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
-                    <option value="category_asc" {% if sort_by == 'category_asc' %}selected{% endif %}>Category: A to Z</option>
-                    <option value="category_desc" {% if sort_by == 'category_desc' %}selected{% endif %}>Category: Z to A</option>
+                    <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name: A to Z</option>
+                    <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name: Z to A</option>
+                    <option value="category_asc" {% if sort == 'category_asc' %}selected{% endif %}>Category: A to Z</option>
+                    <option value="category_desc" {% if sort == 'category_desc' %}selected{% endif %}>Category: Z to A</option>
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest First</option>
                 </select>
             </div>
             <div class="filter-group">
